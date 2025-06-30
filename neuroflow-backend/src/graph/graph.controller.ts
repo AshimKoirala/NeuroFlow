@@ -35,4 +35,9 @@ export class GraphController {
     traverseBFS(@Param('startId')startId:string){
         return this.graphService.traverseBFS(startId);
     }
+
+    @Get('rank')
+    getRanking(){
+        return this.graphService.getSementicRanking();
+    }
 }
