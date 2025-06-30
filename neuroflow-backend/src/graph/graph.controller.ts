@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { GraphService } from './graph.service';
 import { CreateNodeDto } from './dto/create-node.dto';
 import { CreateEdgeDto } from './dto/create-edge.dto';
@@ -25,4 +25,14 @@ export class GraphController {
     findAllEdges() {
         return this.graphService.findAllEdges();
     }    
+
+    @Get('dfs/:startId')
+    traverseDFS(@Param('startId')startId:string){
+        return this.graphService.traverseDFS(startId);
+    }
+
+     @Get('bfs/:startId')
+    traverseBFS(@Param('startId')startId:string){
+        return this.graphService.traverseBFS(startId);
+    }
 }

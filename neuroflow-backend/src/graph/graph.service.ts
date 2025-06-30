@@ -5,6 +5,7 @@ import { Edge } from './entities/edge.entity';
 import { Node } from './entities/node.entity';
 import { CreateEdgeDto } from './dto/create-edge.dto';
 import { CreateNodeDto } from './dto/create-node.dto';
+import { GraphTraversal } from './algorithms/traversal';
 
 @Injectable()
 export class GraphService {
@@ -34,6 +35,27 @@ export class GraphService {
 
     findAllEdges(){
         return this.edgeRepo.find();
+    }
+
+    async traverseDFS(startId: string){
+        const start = await this.nodeRepo.findOne({
+            where:{id:startId},
+            relations:['outgoing','incoming','outgoing.to'],
+        });
+        if (!start) throw new Error('Start node not found');
+
+        const result = GraphTraversal.dfs(start);
+        return result;
+    }
+
+    async traverseBFS(startId:string){
+        const start = await this.nodeRepo.findOne({
+            where:{id: startId},
+            relations:['outgoing','incoming','outgoing.to'],
+        });
+        if (!start) throw new Error('Start node not found');
+        const result = GraphTraversal.bfs(start);
+        return result;
     }
 }
 
