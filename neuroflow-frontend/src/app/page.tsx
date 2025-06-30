@@ -11,15 +11,20 @@ export default function HomePage(){
 
   useEffect(()=>{
     const fetchGraph = async()=>{
-      const [nodeRes,edgeRes]= await Promise.all([
+      const [nodeRes,edgeRes,rankRes]= await Promise.all([
         api.get('/graph/nodes'),
         api.get('/graph/edges'),
+        api.get('/graph/rank'),
 
       ]);
+
+      const rankMap = new Map<string,number>();
+      rankRes.data.forEach((r:any)=> rankMap.set(r.id,r.rank));
 
       const nodes:UINode[] = nodeRes.data.map((n: any)=>({
         id: n.id,
         label:n.label,
+        rank: rankMap.get(n.id) || 0.1, //default small rank
       }));
 
       const edges: UIEdge[] = edgeRes.data.map((e:any)=>({

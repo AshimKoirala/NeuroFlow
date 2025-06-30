@@ -13,7 +13,7 @@ export default function GraphCanvas({ nodes, edges }: Props) {
   const ref = useRef<SVGSVGElement | null>(null);
 
   useEffect(() => {
-    if (!ref.current) return;
+    if (!ref.current || nodes.length === 0 || edges.length === 0) return;
 
     const svg = d3.select(ref.current);
     svg.selectAll('*').remove(); // Clear previous content
@@ -21,38 +21,44 @@ export default function GraphCanvas({ nodes, edges }: Props) {
     const width = 800;
     const height = 600;
 
-    //converted edges to D3 friendly
-    const flatEdges = edges.map(e=>({
-        source: e.from.id,
-        target: e.to.id,
-        weight: e.weight,
-    }))
+    const sizeScale = d3.scaleLinear()
+      .domain([0, d3.max(nodes, (d) => d.rank || 0.1)!])
+      .range([10, 50]);
 
-    //d3 force simulation
+    // convert edges to d3-friendly format
+    const flatEdges = edges.map((e) => ({
+      source: e.from.id,
+      target: e.to.id,
+      weight: e.weight,
+    }));
+
+    // force simulation
     const simulation = d3.forceSimulation(nodes)
       .force('link', d3.forceLink(flatEdges).id((d: any) => d.id).distance(150))
       .force('charge', d3.forceManyBody().strength(-400))
       .force('center', d3.forceCenter(width / 2, height / 2));
 
-      //draw edges
+    // draw edges
     const link = svg
       .append('g')
+      .attr('stroke', '#999')
+      .attr('stroke-opacity', 0.6)
       .selectAll('line')
       .data(flatEdges)
       .enter()
       .append('line')
-      .attr('stroke', '#999')
-      .attr('stroke-opacity', 0.6)
-      .attr('stroke-width', d => Math.sqrt(d.weight));
+      .attr('stroke-width', (d) => Math.sqrt(d.weight));
 
-        //draw nodes
+    // draw nodes
     const node = svg
       .append('g')
+      .attr('stroke', '#fff')
+      .attr('stroke-width', 1.5)
       .selectAll('circle')
       .data(nodes)
       .enter()
       .append('circle')
-      .attr('r', 20)
+      .attr('r', (d) => sizeScale(d.rank || 0.1))
       .attr('fill', '#0070f3')
       .call(
         d3.drag<SVGCircleElement, UINode>()
@@ -61,19 +67,20 @@ export default function GraphCanvas({ nodes, edges }: Props) {
           .on('end', dragended)
       );
 
-        //draw labels
+    // draw labels
     const label = svg
       .append('g')
       .selectAll('text')
       .data(nodes)
       .enter()
       .append('text')
-      .text(d => d.label)
+      .text((d) => d.label)
       .attr('text-anchor', 'middle')
       .attr('dy', 5)
-      .attr('fill', 'white');
+      .attr('fill', 'black')
+      .style('font-size', '12px');
 
-      //tick update loop
+    // simulation tick update
     simulation.on('tick', () => {
       link
         .attr('x1', (d: any) => d.source.x)
@@ -82,16 +89,15 @@ export default function GraphCanvas({ nodes, edges }: Props) {
         .attr('y2', (d: any) => d.target.y);
 
       node
-        .attr('cx', d => d.x!)
-        .attr('cy', d => d.y!);
+        .attr('cx', (d) => d.x!)
+        .attr('cy', (d) => d.y!);
 
       label
-        .attr('x', d => d.x!)
-        .attr('y', d => d.y!);
+        .attr('x', (d) => d.x!)
+        .attr('y', (d) => d.y!);
     });
 
-    //drag behaviour handlers
-
+    // drag behavior handlers
     function dragstarted(event: any, d: UINode) {
       if (!event.active) simulation.alphaTarget(0.3).restart();
       d.fx = d.x;

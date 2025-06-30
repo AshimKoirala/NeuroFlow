@@ -1,14 +1,17 @@
-export interface UINode extends d3.SimulationNodeDatum{
+export interface UINode {
     id:string;
     label:string;
+    rank?: number;
     x?:number;
     y?:number;
+    fx?:number | null;
+    fy?:number | null;
 }
 
-export interface UIEdge extends d3.SimulationLinkDatum<UINode>{
-    id:string;
-    from:UINode;
-    to:UINode;
+export interface UIEdge {
+    id: string;
+    from: UINode;
+    to: UINode;
     weight: number;
 }
 
