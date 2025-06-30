@@ -21,7 +21,7 @@ export class GraphController {
         return this.graphService.findAllNodes();
     }
 
-    @Get('edge')
+    @Get('edges')
     findAllEdges() {
         return this.graphService.findAllEdges();
     }    

@@ -21,21 +21,31 @@ export default function GraphCanvas({ nodes, edges }: Props) {
     const width = 800;
     const height = 600;
 
+    //converted edges to D3 friendly
+    const flatEdges = edges.map(e=>({
+        source: e.from.id,
+        target: e.to.id,
+        weight: e.weight,
+    }))
+
+    //d3 force simulation
     const simulation = d3.forceSimulation(nodes)
-      .force('link', d3.forceLink(edges).id((d: any) => d.id).distance(150))
+      .force('link', d3.forceLink(flatEdges).id((d: any) => d.id).distance(150))
       .force('charge', d3.forceManyBody().strength(-400))
       .force('center', d3.forceCenter(width / 2, height / 2));
 
+      //draw edges
     const link = svg
       .append('g')
       .selectAll('line')
-      .data(edges)
+      .data(flatEdges)
       .enter()
       .append('line')
       .attr('stroke', '#999')
       .attr('stroke-opacity', 0.6)
       .attr('stroke-width', d => Math.sqrt(d.weight));
 
+        //draw nodes
     const node = svg
       .append('g')
       .selectAll('circle')
@@ -51,6 +61,7 @@ export default function GraphCanvas({ nodes, edges }: Props) {
           .on('end', dragended)
       );
 
+        //draw labels
     const label = svg
       .append('g')
       .selectAll('text')
@@ -62,12 +73,13 @@ export default function GraphCanvas({ nodes, edges }: Props) {
       .attr('dy', 5)
       .attr('fill', 'white');
 
+      //tick update loop
     simulation.on('tick', () => {
       link
-        .attr('x1', d => d.from.x!)
-        .attr('y1', d => d.from.y!)
-        .attr('x2', d => d.to.x!)
-        .attr('y2', d => d.to.y!);
+        .attr('x1', (d: any) => d.source.x)
+        .attr('y1', (d: any) => d.source.y)
+        .attr('x2', (d: any) => d.target.x)
+        .attr('y2', (d: any) => d.target.y);
 
       node
         .attr('cx', d => d.x!)
@@ -77,6 +89,8 @@ export default function GraphCanvas({ nodes, edges }: Props) {
         .attr('x', d => d.x!)
         .attr('y', d => d.y!);
     });
+
+    //drag behaviour handlers
 
     function dragstarted(event: any, d: UINode) {
       if (!event.active) simulation.alphaTarget(0.3).restart();
