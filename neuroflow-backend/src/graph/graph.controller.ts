@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post,Delete } from '@nestjs/common';
 import { GraphService } from './graph.service';
 import { CreateNodeDto } from './dto/create-node.dto';
 import { CreateEdgeDto } from './dto/create-edge.dto';
@@ -39,5 +39,15 @@ export class GraphController {
     @Get('rank')
     getRanking(){
         return this.graphService.getSementicRanking();
+    }
+
+    @Delete('node/:id')
+    deleteNode(@Param('id') id: string) {
+        return this.graphService.deleteNode(id);
+    }
+    
+    @Delete('edge/:id')
+    deleteEdge(@Param('id') id: string) {
+    return this.graphService.deleteEdge(id);
     }
 }

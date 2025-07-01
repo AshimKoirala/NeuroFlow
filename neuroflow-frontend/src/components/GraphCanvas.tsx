@@ -13,7 +13,8 @@ export default function GraphCanvas({ nodes, edges }: Props) {
   const ref = useRef<SVGSVGElement | null>(null);
 
   useEffect(() => {
-    if (!ref.current || nodes.length === 0 || edges.length === 0) return;
+    // render graph only if nodes exist; edges can be empty
+    if (!ref.current || nodes.length === 0) return;
 
     const svg = d3.select(ref.current);
     svg.selectAll('*').remove(); // Clear previous content
@@ -25,14 +26,14 @@ export default function GraphCanvas({ nodes, edges }: Props) {
       .domain([0, d3.max(nodes, (d) => d.rank || 0.1)!])
       .range([10, 50]);
 
-    // convert edges to d3-friendly format
-    const flatEdges = edges.map((e) => ({
+    // convert edges to D3 format
+    const flatEdges = edges.length > 0 ? edges.map(e => ({
       source: e.from.id,
       target: e.to.id,
       weight: e.weight,
-    }));
+    })) : [];
 
-    // force simulation
+    // setup force simulation with nodes and edges
     const simulation = d3.forceSimulation(nodes)
       .force('link', d3.forceLink(flatEdges).id((d: any) => d.id).distance(150))
       .force('charge', d3.forceManyBody().strength(-400))
@@ -77,10 +78,12 @@ export default function GraphCanvas({ nodes, edges }: Props) {
       .text((d) => d.label)
       .attr('text-anchor', 'middle')
       .attr('dy', 5)
-      .attr('fill', 'black')
+      .attr('fill', 'white')
+      .style('text-shadow', '0 0 2px white')
+      .style('pointer-events', 'none')
       .style('font-size', '12px');
 
-    // simulation tick update
+    // update positions on each tick
     simulation.on('tick', () => {
       link
         .attr('x1', (d: any) => d.source.x)
@@ -97,7 +100,7 @@ export default function GraphCanvas({ nodes, edges }: Props) {
         .attr('y', (d) => d.y!);
     });
 
-    // drag behavior handlers
+    // drag event handlers
     function dragstarted(event: any, d: UINode) {
       if (!event.active) simulation.alphaTarget(0.3).restart();
       d.fx = d.x;

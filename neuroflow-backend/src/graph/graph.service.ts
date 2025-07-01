@@ -10,73 +10,78 @@ import { PageRank } from './algorithms/ranking';
 
 @Injectable()
 export class GraphService {
-    constructor(
-        @InjectRepository(Node)
-        private nodeRepo: Repository<Node>,
-        @InjectRepository(Edge)
-        private edgeRepo: Repository<Edge>,
-    ){}
+  constructor(
+    @InjectRepository(Node)
+    private nodeRepo: Repository<Node>,
 
-    createNode(dto: CreateNodeDto){
-        const node = this.nodeRepo.create(dto);
-        return this.nodeRepo.save(node);
-    }
+    @InjectRepository(Edge)
+    private edgeRepo: Repository<Edge>,
+  ) {}
 
-    createEdge(dto: CreateEdgeDto){
-        return this.edgeRepo.save({
-            from:{ id: dto.fromId},
-            to: {id: dto.toId},
-            weight: dto.weight ?? 1,
-        });
-    }
+  async createNode(dto: CreateNodeDto) {
+    const node = this.nodeRepo.create({ label: dto.label });
+    return this.nodeRepo.save(node);
+  }
 
-    findAllNodes(){
-        return this.nodeRepo.find({ relations:['outgoing','incoming']});
-    }
+  createEdge(dto: CreateEdgeDto) {
+    return this.edgeRepo.save({
+      from: { id: dto.fromId },
+      to: { id: dto.toId },
+      weight: dto.weight ?? 1,
+    });
+  }
 
-    findAllEdges(){
-        return this.edgeRepo.find();
-    }
+  findAllNodes() {
+    return this.nodeRepo.find({ relations: ['outgoing', 'incoming'] });
+  }
 
-    async traverseDFS(startId: string){
-        const start = await this.nodeRepo.findOne({
-            where:{id:startId},
-            relations:['outgoing','incoming','outgoing.to'],
-        });
-        if (!start) throw new Error('Start node not found');
+  findAllEdges() {
+    return this.edgeRepo.find({ relations: ['from', 'to'] });
+  }
 
-        const result = GraphTraversal.dfs(start);
-        return result;
-    }
+  async deleteNode(id: string) {
+    await this.edgeRepo.delete({ from: { id } });
+    await this.edgeRepo.delete({ to: { id } });
+    return this.nodeRepo.delete(id);
+  }
 
-    async traverseBFS(startId:string){
-        const start = await this.nodeRepo.findOne({
-            where:{id: startId},
-            relations:['outgoing','incoming','outgoing.to'],
-        });
-        if (!start) throw new Error('Start node not found');
-        const result = GraphTraversal.bfs(start);
-        return result;
-    }
+  async deleteEdge(id: string) {
+    return this.edgeRepo.delete(id);
+  }
 
-    async getSementicRanking(){
-        const nodes = await this.nodeRepo.find({
-            relations: ['outgoing', 'outgoing.to'],
-        });
+  async traverseDFS(startId: string) {
+    const start = await this.nodeRepo.findOne({
+      where: { id: startId },
+      relations: ['outgoing', 'incoming', 'outgoing.to'],
+    });
 
-        const result = PageRank.compute(nodes);
+    if (!start) throw new Error('Start node not found');
+    return GraphTraversal.dfs(start);
+  }
 
-        //return with node labels
-        const output = nodes.map((node)=>({
-            id: node.id,
-            label: node.label,
-            rank: result.get(node.id),
-        }));
+  async traverseBFS(startId: string) {
+    const start = await this.nodeRepo.findOne({
+      where: { id: startId },
+      relations: ['outgoing', 'incoming', 'outgoing.to'],
+    });
 
-        // sort rank descending
-        return output.sort((a, b) => (b.rank ?? 0) - (a.rank ?? 0)); 
-    }
+    if (!start) throw new Error('Start node not found');
+    return GraphTraversal.bfs(start);
+  }
+
+  async getSementicRanking() {
+    const nodes = await this.nodeRepo.find({
+      relations: ['outgoing', 'outgoing.to'],
+    });
+
+    const result = PageRank.compute(nodes);
+
+    return nodes
+      .map((node) => ({
+        id: node.id,
+        label: node.label,
+        rank: result.get(node.id),
+      }))
+      .sort((a, b) => (b.rank ?? 0) - (a.rank ?? 0));
+  }
 }
-
-
-
